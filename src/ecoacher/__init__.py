@@ -1,0 +1,1 @@
+"""Ecoacher application package."""
