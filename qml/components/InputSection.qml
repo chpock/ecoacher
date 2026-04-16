@@ -19,6 +19,14 @@ Rectangle {
         inputTextArea.forceActiveFocus()
     }
 
+    function activateTextArea() {
+        Qt.callLater(function () {
+            var textLength = inputTextArea.length
+            inputTextArea.forceActiveFocus()
+            inputTextArea.select(0, textLength)
+        })
+    }
+
     GroupBox {
         anchors.fill: parent
         anchors.margins: 6

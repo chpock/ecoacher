@@ -22,12 +22,18 @@ ApplicationWindow {
 
     onVisibleChanged: {
         if (visible) {
-            inputSection.focusTextArea()
+            inputSection.activateTextArea()
+        }
+    }
+
+    onActiveChanged: {
+        if (active) {
+            inputSection.activateTextArea()
         }
     }
 
     Component.onCompleted: {
-        inputSection.focusTextArea()
+        inputSection.activateTextArea()
     }
 
     Shortcut {
