@@ -130,9 +130,10 @@ class _FakeWorker:
 
 
 class _FakeClient:
-    def __init__(self, base_url=None, directory=None):
+    def __init__(self, base_url=None, directory=None, timeout_seconds=60.0):
         self.base_url = base_url
         self.directory = directory
+        self.timeout_seconds = timeout_seconds
         self.closed = False
         self.ping_result = True
 

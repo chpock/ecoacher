@@ -8,7 +8,11 @@ from PySide6.QtCore import QObject, Property, QProcess, QTimer, Signal, Slot
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QApplication, QMenu, QStyle, QSystemTrayIcon
 
-from ..config.constants import OPENCODE_PING_ENABLED, OPENCODE_PING_INTERVAL_MS
+from ..config.constants import (
+    OPENCODE_PING_ENABLED,
+    OPENCODE_PING_INTERVAL_MS,
+    OPENCODE_TIMEOUT_SECONDS,
+)
 from ..opencode.client import OpencodeClient
 from ..opencode.request import CheckWorker
 from ..spellcheck.manager import SpellCheckManager
@@ -30,6 +34,7 @@ class AppController(QObject):
     opencodeStatusChanged = Signal()
     requestStatusChanged = Signal()
     requestInFlightChanged = Signal()
+    countdownSecondsChanged = Signal()
 
     def __init__(self, app: QApplication, tray_available: bool, app_id: str) -> None:
         super().__init__()
@@ -68,6 +73,10 @@ class AppController(QObject):
         self._check_worker: CheckWorker | None = None
         self._pending_check = False
         self._spell_check_manager: SpellCheckManager | None = None
+        self._countdown_seconds = 0
+        self._countdown_timer = QTimer(self)
+        self._countdown_timer.setInterval(1000)
+        self._countdown_timer.timeout.connect(self._on_countdown_tick)
 
         self._opencode_process.started.connect(self._on_opencode_started)
         self._opencode_process.errorOccurred.connect(self._on_opencode_error)
@@ -139,6 +148,10 @@ class AppController(QObject):
     def requestInFlight(self) -> bool:
         logger.debug("Reading request in-flight: %s", self._request_in_flight)
         return self._request_in_flight
+
+    @Property(int, notify=countdownSecondsChanged)
+    def countdownSeconds(self) -> int:
+        return self._countdown_seconds
 
     @Slot(str)
     def setSpellText(self, text: str) -> None:
@@ -473,6 +486,22 @@ class AppController(QObject):
         self._request_in_flight = in_flight
         self.requestInFlightChanged.emit()
 
+        if in_flight:
+            self._countdown_seconds = OPENCODE_TIMEOUT_SECONDS
+            self.countdownSecondsChanged.emit()
+            self._countdown_timer.start()
+        else:
+            self._countdown_timer.stop()
+            if self._countdown_seconds != 0:
+                self._countdown_seconds = 0
+                self.countdownSecondsChanged.emit()
+
+    def _on_countdown_tick(self) -> None:
+        self._countdown_seconds -= 1
+        self.countdownSecondsChanged.emit()
+        if self._countdown_seconds <= 0:
+            self._countdown_timer.stop()
+
     def _rebuild_corrected_diff_html(self) -> None:
         rendered = build_word_diff_html(self._submitted_spell_text, self._corrected_text)
         if rendered == self._corrected_diff_html:
@@ -499,6 +528,7 @@ class AppController(QObject):
         self._opencode_client = OpencodeClient(
             base_url=endpoint,
             directory=os.getcwd(),
+            timeout_seconds=OPENCODE_TIMEOUT_SECONDS,
         )
         self._set_opencode_status("ready")
 

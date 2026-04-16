@@ -25,11 +25,16 @@ Frame {
                 spacing: 8
 
                 Label {
-                    text: "Opencode: "
-                        + (footerRoot.appController ? footerRoot.appController.opencodeStatus : "not ready")
-                        + (footerRoot.appController && footerRoot.appController.requestStatus
-                            ? " | " + footerRoot.appController.requestStatus
-                            : "")
+                    text: {
+                        var parts = ["Opencode: " + (footerRoot.appController ? footerRoot.appController.opencodeStatus : "not ready")];
+                        if (footerRoot.appController && footerRoot.appController.requestStatus) {
+                            parts.push(footerRoot.appController.requestStatus);
+                        }
+                        if (footerRoot.appController && footerRoot.appController.requestInFlight) {
+                            parts.push("timeout in " + footerRoot.appController.countdownSeconds + "s");
+                        }
+                        return parts.join(" | ");
+                    }
                 }
 
                 BusyIndicator {
