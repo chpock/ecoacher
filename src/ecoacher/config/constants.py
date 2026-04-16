@@ -22,7 +22,14 @@ CHECK_SCHEMA = {
     "properties": {
         "corrected_phrase": {
             "type": "string",
-            "description": "Corrected English phrase or English translation",
+            "description": "Corrected English phrase or natural English translation",
+        },
+        "understood_meaning_ru": {
+            "type": "string",
+            "description": (
+                "Russian translation of how the agent understood the original English input; "
+                "must be an empty string for Russian input"
+            ),
         },
         "summary_ru": {
             "type": "string",
@@ -44,7 +51,10 @@ CHECK_SCHEMA = {
                     },
                     "category": {
                         "type": "string",
-                        "description": "Correction category",
+                        "description": (
+                            "Correction category such as grammar, article, preposition, "
+                            "word_choice, word_order, punctuation, or unnatural_phrasing"
+                        ),
                     },
                     "explanation_ru": {
                         "type": "string",
@@ -60,5 +70,5 @@ CHECK_SCHEMA = {
             },
         },
     },
-    "required": ["corrected_phrase", "summary_ru", "corrections"],
+    "required": ["corrected_phrase", "understood_meaning_ru", "summary_ru", "corrections"],
 }

@@ -9,7 +9,7 @@ from .client import OpencodeClient, OpencodeSDKError
 
 class CheckWorker(QThread):
     statusChanged = Signal(str)
-    success = Signal(str, str, str)
+    success = Signal(str, str, str, str)
     failed = Signal(str)
 
     def __init__(self, client: OpencodeClient, input_text: str) -> None:
@@ -20,6 +20,7 @@ class CheckWorker(QThread):
     def run(self) -> None:
         session_id: str | None = None
         corrected = ""
+        understood_meaning_ru = ""
         summary_ru = ""
         corrections_text = ""
         error_message: str | None = None
@@ -40,6 +41,7 @@ class CheckWorker(QThread):
             )
 
             corrected = str(structured.get("corrected_phrase", "")).strip()
+            understood_meaning_ru = str(structured.get("understood_meaning_ru", "")).strip()
             summary_ru = str(structured.get("summary_ru", "")).strip()
             corrections_text = self._format_corrections(structured.get("corrections", []))
         except OpencodeSDKError as exc:
@@ -64,7 +66,7 @@ class CheckWorker(QThread):
             self.failed.emit(error_message)
             return
 
-        self.success.emit(corrected, summary_ru, corrections_text)
+        self.success.emit(corrected, understood_meaning_ru, summary_ru, corrections_text)
 
     def _format_corrections(self, corrections: Any) -> str:
         if not isinstance(corrections, list) or not corrections:

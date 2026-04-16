@@ -231,10 +231,13 @@ def test_endpoint_detection_and_ping_handling(monkeypatch, qapp):
 
 def test_worker_callbacks_and_shutdown(monkeypatch, qapp):
     controller, app, _clipboard = _make_controller(monkeypatch, qapp)
-    controller._on_check_success("correct", "sum <x>", "corr")
+    controller._on_check_success("correct", "понято как <x>", "sum <x>", "corr")
     assert controller.correctedText == "correct"
+    assert controller.understoodMeaningRu == "понято как <x>"
     assert "Summary" in controller.explanationText
     assert "sum &lt;x&gt;" in controller.explanationText
+    assert "Understood meaning" in controller.explanationText
+    assert "понято как &lt;x&gt;" in controller.explanationText
     assert controller.requestStatus == ""
 
     controller._on_check_failed("err")
@@ -243,6 +246,14 @@ def test_worker_callbacks_and_shutdown(monkeypatch, qapp):
     controller._opencode_process._state = _FakeProcess.ProcessState.NotRunning
     controller.requestShutdown()
     assert app.quit_called is True
+
+
+def test_check_success_omits_understood_meaning_block_when_empty(monkeypatch, qapp):
+    controller, _app, _clipboard = _make_controller(monkeypatch, qapp)
+    controller._on_check_success("correct", "", "sum", "corr")
+
+    assert "Summary" in controller.explanationText
+    assert "Understood meaning" not in controller.explanationText
 
 
 def test_stdout_stderr_handlers_process_lines(monkeypatch, qapp):

@@ -23,6 +23,7 @@ class AppController(QObject):
     spellTextChanged = Signal()
     correctedTextChanged = Signal()
     correctedDiffHtmlChanged = Signal()
+    understoodMeaningRuChanged = Signal()
     summaryRuChanged = Signal()
     correctionsChanged = Signal()
     explanationTextChanged = Signal()
@@ -46,6 +47,7 @@ class AppController(QObject):
         self._submitted_spell_text = ""
         self._corrected_text = ""
         self._corrected_diff_html = ""
+        self._understood_meaning_ru = ""
         self._summary_ru = ""
         self._corrections_text = ""
         self._explanation_text = ""
@@ -104,6 +106,14 @@ class AppController(QObject):
     def explanationText(self) -> str:
         logger.debug("Reading explanation text (%d chars)", len(self._explanation_text))
         return self._explanation_text
+
+    @Property(str, notify=understoodMeaningRuChanged)
+    def understoodMeaningRu(self) -> str:
+        logger.debug(
+            "Reading understood_meaning_ru text (%d chars)",
+            len(self._understood_meaning_ru),
+        )
+        return self._understood_meaning_ru
 
     @Property(str, notify=summaryRuChanged)
     def summaryRu(self) -> str:
@@ -206,6 +216,15 @@ class AppController(QObject):
         self.summaryRuChanged.emit()
 
     @Slot(str)
+    def setUnderstoodMeaningRu(self, text: str) -> None:
+        if text == self._understood_meaning_ru:
+            return
+
+        logger.info("Updating understood_meaning_ru text (%d chars)", len(text))
+        self._understood_meaning_ru = text
+        self.understoodMeaningRuChanged.emit()
+
+    @Slot(str)
     def setCorrectionsText(self, text: str) -> None:
         if text == self._corrections_text:
             return
@@ -241,6 +260,7 @@ class AppController(QObject):
         self._set_request_status("create session")
         self._submitted_spell_text = input_text
         self.setCorrectedText("")
+        self.setUnderstoodMeaningRu("")
         self.setSummaryRu("")
         self.setCorrectionsText("")
         self.setExplanationText("")
@@ -556,16 +576,27 @@ class AppController(QObject):
         logger.info("Check worker status: %s", status)
         self._set_request_status(status)
 
-    @Slot(str, str, str)
-    def _on_check_success(self, corrected_phrase: str, summary_ru: str, corrections_text: str) -> None:
+    @Slot(str, str, str, str)
+    def _on_check_success(
+        self,
+        corrected_phrase: str,
+        understood_meaning_ru: str,
+        summary_ru: str,
+        corrections_text: str,
+    ) -> None:
         logger.info("Check worker returned structured result")
         self.setCorrectedText(corrected_phrase)
+        self.setUnderstoodMeaningRu(understood_meaning_ru)
         self.setSummaryRu(summary_ru)
         self.setCorrectionsText(corrections_text)
 
         explanation_parts: list[str] = []
         if summary_ru:
             explanation_parts.append(f"<b>Summary</b><br>{html.escape(summary_ru)}")
+        if understood_meaning_ru:
+            explanation_parts.append(
+                f"<b>Understood meaning</b><br>{html.escape(understood_meaning_ru)}"
+            )
         if corrections_text:
             explanation_parts.append(corrections_text)
 

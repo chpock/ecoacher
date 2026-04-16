@@ -7,6 +7,7 @@ class _FakeClient:
         self.create_session_result = "ses_1"
         self.prompt_result = {
             "corrected_phrase": "Fixed",
+            "understood_meaning_ru": "",
             "summary_ru": "Summary",
             "corrections": [],
         }
@@ -58,6 +59,7 @@ def test_check_worker_success_emits_signals():
     client = _FakeClient()
     client.prompt_result = {
         "corrected_phrase": "Fixed phrase",
+        "understood_meaning_ru": "Я понял это как исправленную фразу",
         "summary_ru": "Кратко",
         "corrections": [
             {
@@ -74,14 +76,15 @@ def test_check_worker_success_emits_signals():
     successes = []
     worker.statusChanged.connect(statuses.append)
     worker.failed.connect(failures.append)
-    worker.success.connect(lambda a, b, c: successes.append((a, b, c)))
+    worker.success.connect(lambda a, b, c, d: successes.append((a, b, c, d)))
 
     worker.run()
 
     assert failures == []
     assert successes
-    corrected, summary, corrections_html = successes[0]
+    corrected, understood_meaning_ru, summary, corrections_html = successes[0]
     assert corrected == "Fixed phrase"
+    assert understood_meaning_ru == "Я понял это как исправленную фразу"
     assert summary == "Кратко"
     assert "Word choice" in corrections_html
     assert statuses[:3] == ["create session", "send request", "waiting for response"]
